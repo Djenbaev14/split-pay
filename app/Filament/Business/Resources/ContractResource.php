@@ -179,8 +179,14 @@ class ContractResource extends Resource
                         Section::make('To‘lov jadvali')
                             // ->hidden(fn () => auth()->id() !== 1) // Faqat sizga ko‘rsatish
                             ->schema([
-                                View::make('contract.payments-table')
-                                    ->viewData(['payments' => fn ($livewire) => $livewire->record->payments,])
+                            Placeholder::make('comment')
+                                ->label(false)
+                                ->content(fn ($record) => view('contract.payments-table', [
+                                    'payments' => $record->payments,
+                                ]))
+                                ->columnSpan(12),
+                                // View::make('contract.payments-table')
+                                //     ->viewData(['payments' => fn ($livewire) => $livewire->record->payments,])
                             ])->columns(12)->columnSpan(12)
                 ])->columnSpan(12)->columns(12)
         ];
