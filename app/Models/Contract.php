@@ -24,6 +24,10 @@ class Contract extends Model
     {
         return $this->belongsTo(Branch::class);
     }
+    public function payments()
+    {
+        return $this->hasMany(PaymentSchedule::class);
+    }
     public function tariff()
     {
         return $this->belongsTo(Tariff::class);

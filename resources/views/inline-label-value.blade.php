@@ -1,4 +1,4 @@
-<div class="flex items-center">
-    <span class="font-bold mr-2">{{ $label }}:</span> &nbsp;
-    <span>{{ $value }}</span>
+<div class="p-4 rounded" style="background:#FAFAFA">
+    <span class="mr-2">{{ $label }}:</span> 
+    <span class="font-bold">{{ $value }}</span>
 </div>

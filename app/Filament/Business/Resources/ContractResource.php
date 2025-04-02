@@ -31,12 +31,13 @@ use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Notifications\Notification;
+use Filament\Resources\Pages\CreateRecord;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Log;
+use Filament\Forms\Components\View;
 
 class ContractResource extends Resource
 {
@@ -45,10 +46,13 @@ class ContractResource extends Resource
     // protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationGroup = 'Контракты';
     public static function form(Form $form): Form
-    {
-        return $form
-            ->schema(fn ($livewire)  => $livewire instanceof CreateRecord ? self::createSchema() : self::editSchema());
-    }
+{
+    return $form->schema(fn ($livewire) => 
+        $livewire instanceof CreateRecord
+            ? self::createSchema()
+            : self::editSchema()
+    );
+}
     protected static function editSchema(): array
     {
         return [
@@ -84,7 +88,7 @@ class ContractResource extends Resource
                                 ->label(false)
                                 ->content(fn ($record) => view('inline-label-value', [
                                     'label' => 'Yaratilgan',
-                                    'value' => $record->created_at->format('Y-m-d H:i:s'),
+                                    'value' => $record->created_at->format('Y-m-d H:i'),
                                 ]))
                                 ->columnSpan(6),
                             Placeholder::make('amount')
@@ -126,17 +130,58 @@ class ContractResource extends Resource
                                 ->label(false)
                                 ->content(fn ($record) => view('inline-label-value', [
                                     'label' => 'Kompaniya',
-                                    'value' => $record->period_month,
+                                    'value' => $record->branch->name,
                                 ]))
                                 ->columnSpan(6),
-                            Placeholder::make('period_month')
+                            Placeholder::make('xodim')
                                 ->label(false)
                                 ->content(fn ($record) => view('inline-label-value', [
-                                    'label' => 'Davr',
-                                    'value' => $record->period_month,
+                                    'label' => 'Xodim',
+                                    'value' => $record->customer->name,
                                 ]))
                                 ->columnSpan(6),
-                        ])->columnSpan(6)->columns(12)
+                            Placeholder::make('xodim')
+                                ->label(false)
+                                ->content(fn ($record) => view('inline-label-value', [
+                                    'label' => 'Xodim',
+                                    'value' => $record->customer->name,
+                                ]))
+                                ->columnSpan(6),
+                            Placeholder::make('xodim')
+                                ->label(false)
+                                ->content(fn ($record) => view('inline-label-value', [
+                                    'label' => "Muddati o'tgan qarzlar",
+                                    'value' => '',
+                                ]))
+                                ->columnSpan(6),
+                            Placeholder::make('updated_at')
+                                ->label(false)
+                                ->content(fn ($record) => view('inline-label-value', [
+                                    'label' => "Yangilangan",
+                                    'value' => $record->updated_at->format('Y-m-d H:i'),
+                                ]))
+                                ->columnSpan(6),
+                            Placeholder::make('product')
+                                ->label(false)
+                                ->content(fn ($record) => view('inline-label-value', [
+                                    'label' => "Mahsulotlarga izohlar",
+                                    'value' => $record->product,
+                                ]))
+                                ->columnSpan(6),
+                            Placeholder::make('comment')
+                                ->label(false)
+                                ->content(fn ($record) => view('inline-label-value', [
+                                    'label' => "Sharh",
+                                    'value' => $record->comment,
+                                ]))
+                                ->columnSpan(6),
+                        ])->columnSpan(6)->columns(12),
+                        Section::make('To‘lov jadvali')
+                            // ->hidden(fn () => auth()->id() !== 1) // Faqat sizga ko‘rsatish
+                            ->schema([
+                                View::make('contract.payments-table')
+                                    ->viewData(['payments' => fn ($livewire) => $livewire->record->payments,])
+                            ])->columns(12)->columnSpan(12)
                 ])->columnSpan(12)->columns(12)
         ];
     }
