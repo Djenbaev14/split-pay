@@ -28,6 +28,10 @@ class Contract extends Model
     {
         return $this->hasMany(PaymentSchedule::class);
     }
+    public function status()
+    {
+        return $this->belongsTo(Status::class);
+    }
     public function tariff()
     {
         return $this->belongsTo(Tariff::class);
@@ -92,9 +96,9 @@ class Contract extends Model
             PaymentSchedule::create([
                 'contract_id' => $this->id,
                 'due_date' => $date,
-                'principal_amount' => round($monthlyPayment),
-                'interest_amount' => round($interest),
-                'total_amount' => round($total),
+                'principal_amount' => round($monthlyPayment,2),
+                'interest_amount' => round($interest,2),
+                'total_amount' => round($total,2),
                 'is_paid' => false,
             ]);
         }

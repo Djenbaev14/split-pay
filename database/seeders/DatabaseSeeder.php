@@ -7,6 +7,7 @@ use App\Models\Business;
 use App\Models\Card;
 use App\Models\Customer;
 use App\Models\PeriodType;
+use App\Models\Status;
 use App\Models\TariffType;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -59,6 +60,27 @@ class DatabaseSeeder extends Seeder
         ]);
         Card::create([
             'name'=>'Uzcard',
+        ]);
+
+        Status::create([
+            'name'=>'Ожидает подтверждение',
+            'key'=>'pending',
+            'color'=>'#a39e0ca6',
+        ]);
+        Status::create(attributes: [
+            'name'=>'Актив',
+            'key'=>'active',
+            'color'=>'#0d6efd',
+        ]);
+        Status::create([
+            'name'=>'Завершенный',
+            'key'=>'completed',
+            'color'=>'#28B446',
+        ]);
+        Status::create([
+            'name'=>'Отмененный',
+            'key'=>'cancelled',
+            'color'=>'#ff1414',
         ]);
     }
 }

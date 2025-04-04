@@ -16,6 +16,9 @@ return [
     'team_model' => \App\Models\Team::class,
 
     'scope_to_tenant' => true,
+    
+    'scope_roles_to_tenant' => true,
+    'scope_premissions_to_tenant' => false,
 
     'super_admin_role_name' => 'Super Admin',
 
@@ -78,8 +81,7 @@ return [
     ],
 
     'guard_names' => [
-        'web' => 'web',
-        'api' => 'api',
+        'business' => 'business',
     ],
 
     'toggleable_guard_names' => [
@@ -212,6 +214,8 @@ return [
         ],
 
         'user_model' => \App\Models\User::class,
+
+        'user_model_class' => 'User',
 
         'policies_namespace' => 'App\Policies',
     ],

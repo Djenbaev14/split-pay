@@ -14,4 +14,13 @@ class ContractDetail extends Model
     protected $casts = [
         'phones' => 'array',
     ];
+
+    public function region()
+    {
+        return $this->belongsTo(Region::class);
+    }
+    public function district()
+    {
+        return $this->belongsTo(District::class);
+    }
 }

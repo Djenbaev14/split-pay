@@ -29,6 +29,8 @@ return new class extends Migration
             $table->integer('period_month');
             $table->string('product');
             $table->longText('comment')->nullable();
+            $table->unsignedBigInteger('status_id')->nullable()->default(1);
+            $table->foreign('status_id')->references('id')->on('statuses');
             $table->timestamps();
         });
     }

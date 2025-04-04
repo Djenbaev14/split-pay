@@ -18,18 +18,37 @@ use Filament\Support\Enums\MaxWidth;
 class CreateContract extends CreateRecord
 {
     protected static string $resource = ContractResource::class;
+    protected function getSteps(): array
+    {
+        return [
+            'Подробности договора',
+            'Информация о клиенте',
+        ];
+    }
+
+    protected function afterCreate(): void
+    {
+        // Ma'lumotlarni saqlagandan keyin qadamlar holatini saqlash
+        $this->record->update([
+            'customer_id'=>auth()->user()->id,
+            'business_id'=>auth()->user()->business_id,
+            'branch_id' => $this->form->getState()['branch_id'],
+            'tariff_id' => $this->form->getState()['tariff_id'],
+            'amount' => $this->form->getState()['amount'],
+            'down_payment' => $this->form->getState()['down_payment'],
+            'payment_day' => $this->form->getState()['payment_day'],
+            'period_month' => $this->form->getState()['period_month'],
+            'product' => $this->form->getState()['product'],
+            'comment' => $this->form->getState()['comment'],
+        ]);
+    }
     public  function getHeaderActions(): array
     {
         return [
-            Action::make('calculateSchedule')
-                ->label('To‘lov grafigini olish')
-                ->modal()
-                ->action(fn ($state) => $this->generatePaymentSchedule()) 
-                ->modalContent(fn () => $this->generatePaymentSchedule()),
-                Action::make('add_client')
+            Action::make('add_client')
                     ->label("Klient qo'shish")
-                    ->modalWidth('lg')
                     ->modalHeading('Yangi mijoz qo‘shish')
+                    ->modalWidth(MaxWidth::TwoExtraLarge)
                     ->form([
                         Section::make()
                             ->schema([
@@ -76,19 +95,16 @@ class CreateContract extends CreateRecord
                                 TextInput::make('passport_number')
                                     ->label('Pasport raqami')
                                     ->numeric()
-                                    ->unique(ignoreRecord: true)
                                     ->placeholder('Pasport raqami')
                                     ->required()
                                     ->maxLength(7)->columnSpan(6),
                                 TextInput::make('inn')
                                     ->label('INN')
-                                    ->unique(ignoreRecord: true)
                                     ->numeric()
                                     ->placeholder('INN')
                                     ->maxLength(15)->columnSpan(6),
                                 TextInput::make('pinfl')
                                     ->label('PINFL')
-                                    ->unique(ignoreRecord: true)
                                     ->numeric()
                                     ->placeholder('PINFL')
                                     ->required()
@@ -101,7 +117,7 @@ class CreateContract extends CreateRecord
                                     ->required()->columnSpan(6),
                             ])->columnSpan(12)->columns(12)
                     ])
-                    ->action(function ($data, $set) {
+                    ->action(function ($data, $livewire) {
                         $client = Client::create([
                             'customer_id' => auth()->user()->id,
                             'first_name' => $data['first_name'],
@@ -118,26 +134,37 @@ class CreateContract extends CreateRecord
                             'passport_date_expiration' => $data['passport_date_expiration'],
                         ]);
 
-                        $set('client_id', $client->id);
                         Notification::make()
                             ->title('Mijoz qo‘shildi!')
                             ->success()
                             ->body('Yangi mijoz ma\'lumotlari saqlandi.')
                             ->send();
+                        
+                        $livewire->form->fill([
+                            'client_id' => $client->id,
+                            'passport_number' => $client->passport_number,
+                            'passport_series' => $client->passport_series,
+                        ]);
                     }),
         ];
     }
+    
+    
     public function generatePaymentSchedule()
     {
-        if (!$this->form) {
-            return Notification::make()
-                ->title('Xatolik!')
-                ->danger()
-                ->body('Form yuklanmagan!')
-                ->send();
-        }
-        $data = $this->form->getState(); // Form ma'lumotlarini olish
+        $data = $this->form->getState();
+    
+        // $requiredFields = ['amount', 'tariff_id', 'down_payment', 'period_month','payment_day'];
 
+        // foreach ($requiredFields as $field) {
+        //     if (!isset($data[$field]) || empty($data[$field])) {
+        //         return Notification::make()
+        //             ->title('Xatolik!')
+        //             ->danger()
+        //             ->body("{$field} maydoni to‘ldirilishi shart!")
+        //             ->send();
+        //     }
+        // }
         $amount = $data['amount'] ?? 0;
         $initialPayment = $data['down_payment'] ?? 0;
         $paymentDay = $data['payment_day'] ?? 1;

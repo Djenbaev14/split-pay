@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
+use Althinect\FilamentSpatieRolesPermissions\Concerns\HasSuperAdmin;
 use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class Customer extends Authenticatable implements FilamentUser
 {
-    use HasFactory;
+    use HasFactory,HasRoles,HasSuperAdmin;
 
     protected $guarded=['id'];
     protected $hidden = [
@@ -24,5 +27,8 @@ class Customer extends Authenticatable implements FilamentUser
         // Faqat business paneliga kirishga ruxsat
         return $panel->getId() === 'business';
     }
+    protected $casts = [
+        'password' => 'hashed',
+    ];
     
 }

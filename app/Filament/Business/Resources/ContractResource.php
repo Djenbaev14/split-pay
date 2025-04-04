@@ -5,6 +5,7 @@ namespace App\Filament\Business\Resources;
 use App\Filament\Business\Resources\ContractResource\Pages;
 use App\Filament\Business\Resources\ContractResource\RelationManagers;
 use App\Models\Branch;
+use App\Models\ClientContact;
 use App\Models\District;
 use App\Models\PaymentSchedule;
 use App\Models\Region;
@@ -13,6 +14,7 @@ use App\Models\Contract;
 use App\Models\Tariff;
 use Carbon\Carbon;
 use Filament\Forms;
+use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
@@ -33,18 +35,23 @@ use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\Alignment;
 use Filament\Tables;
 use Filament\Forms\Components\Actions\Action;
+use Filament\Tables\Columns\Layout\Split;
+use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Forms\Components\View;
+use Filament\Support\Enums\MaxWidth;
 
 class ContractResource extends Resource
 {
     protected static ?string $model = Contract::class;
+    
 
-    // protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    protected static ?string $navigationGroup = 'Контракты';
+    protected static ?string $navigationIcon = 'fas-file-signature';
+    // protected static ?string $navigationGroup = 'Контракты';
     public static function form(Form $form): Form
 {
     return $form->schema(fn ($livewire) => 
@@ -62,9 +69,130 @@ class ContractResource extends Resource
                         ->tabs([
                             Tab::make('Umumiy malumotlar')
                                 ->schema([
+                                    Placeholder::make('last_name')
+                                        ->label(false)
+                                        ->content(fn ($record) => view('contract.contract-status', [
+                                            'contract' => $record,
+                                        ]))
+                                        ->columnSpan(12),
+                                    Placeholder::make('last_name')
+                                        ->label('Familiya')
+                                        ->content(fn ($record) => $record->client->last_name)
+                                        ->columnSpan(4),
+                                    Placeholder::make('first_name')
+                                        ->label('Ism')
+                                        ->content(fn ($record) => $record->client->first_name)
+                                        ->columnSpan(4),
+                                    Placeholder::make('patronymic')
+                                        ->label('Otasining ismi')
+                                        ->content(fn ($record) => $record->client->patronymic)
+                                        ->columnSpan(4),
+                                    Placeholder::make('birthday')
+                                        ->label("Tug'ilgan kuni")
+                                        ->content(fn ($record) => $record->client->birthday)
+                                        ->columnSpan(4),
+                                    Placeholder::make('passport')
+                                        ->label('Passport')
+                                        ->content(fn ($record) => $record->client->passport_series.''.$record->client->passport_number)
+                                        ->columnSpan(4),
+                                    Placeholder::make('gender')
+                                        ->label('Jinsi')
+                                        ->content(fn ($record) => $record->client->gender == 'male' ? 'Erkak':'Ayol')
+                                        ->columnSpan(4),
+                                    Placeholder::make('birthplace')
+                                        ->label("Tug'ilgan joyi")
+                                        ->content(fn ($record) => $record->client->birthplace)
+                                        ->columnSpan(4),
+                                    Placeholder::make('inn')
+                                        ->label('INN')
+                                        ->content(fn ($record) => $record->client->inn)
+                                        ->columnSpan(4),
+                                    Placeholder::make('gender')
+                                        ->label('PINFL')
+                                        ->content(fn ($record) => $record->client->pinfl)
+                                        ->columnSpan(4),
+                                    Placeholder::make('passport_address')
+                                        ->label("Passport bo'yicha manzil")
+                                        ->content(fn ($record) => $record->contractDetail->passport_address)
+                                        ->columnSpan(4),
+                                    Placeholder::make('address')
+                                        ->label('Yashash manzili')
+                                        ->content(fn ($record) => $record->contractDetail->address)
+                                        ->columnSpan(4),
+                                    Placeholder::make('mfy_address')
+                                        ->label('MFY manzili')
+                                        ->content(fn ($record) => $record->contractDetail->mfy_address)
+                                        ->columnSpan(4),
+                                    Placeholder::make('workplace')
+                                        ->label("Ish joyi")
+                                        ->content(fn ($record) => $record->contractDetail->workplace)
+                                        ->columnSpan(4),
+                                    Placeholder::make('reyting')
+                                        ->label('Mijoz reytingi')
+                                        ->content(fn ($record) => $record->contractDetail->reyting)
+                                        ->columnSpan(4),
+                                    Placeholder::make('phones')
+                                        ->label('Telefonlar')
+                                        // ->content(fn ($record) => $record->contractDetail->phones)
+                                        ->columnSpan(4),
+                                    Actions::make([
+                                        Action::make('contract_download')
+                                            ->label(false)
+                                            ->icon('fas-download')
+                                            ->action(fn ($record) => static::generateWordFile($record))
+                                            ->color('primary')
+                                            ->extraAttributes(['style' => 'border-radius: 100%; padding: 10px 5px 10px 10px;'])
+                                    ])->columnSpan(6),
+                                    Placeholder::make('card')
+                                        ->label('')
+                                        ->content(fn ($record) => view('contract.plastik-card', [
+                                            'card' => $record->contractCards,
+                                        ]))
+                                        ->columnSpan(12),
                                 ]),
                             Tab::make('Kontaktlar')
                                 ->schema([
+                                    Placeholder::make('client-contacts')
+                                        ->label(false)
+                                        ->content(fn ($record) => view('contract.client-contacts', [
+                                            'label' => 'Yaratilgan',
+                                            'clientContacts' => $record->client->ClientContacts,
+                                        ]))
+                                    ->columnSpan(12),
+                                    Actions::make([
+                                        Action::make('add_contact')
+                                            ->label('Yangi kontakt qo‘shish')
+                                            ->icon('heroicon-o-plus')
+                                            ->button()
+                                            ->color('primary')
+                                            ->modalWidth('lg')
+                                            ->modalHeading('Yangi kontakt qo‘shish')
+                                            ->modalSubmitActionLabel('Saqlash')
+                                            ->modalCancelActionLabel('Bekor qilish')
+                                            ->form([
+                                                Forms\Components\TextInput::make('fio')
+                                                    ->label('FIO')
+                                                    ->required()
+                                                    ->maxLength(255),
+                                                Forms\Components\TextInput::make('phone')
+                                                    ->label('Telefon raqami')
+                                                    ->tel()
+                                                    ->required()
+                                                    ->maxLength(20),
+                                                Forms\Components\TextInput::make('relation')
+                                                    ->label('Munosabat')
+                                                    ->required()
+                                                    ->maxLength(20),
+                                            ])
+                                            ->action(function (array $data,$record) {
+                                                ClientContact::create([
+                                                    'client_id' => $record->client_id,
+                                                    'fio' => $data['fio'],
+                                                    'phone' => $data['phone'],
+                                                    'relation' => $data['relation'],
+                                                ]);
+                                            }),
+                                    ])->columnSpan(12),
                                 ]),
                             Tab::make('Pochta')
                                 ->schema([
@@ -81,7 +209,7 @@ class ContractResource extends Resource
                             Tab::make('Sipuni')
                                 ->schema([
                                 ]),
-                        ])->columnSpan(6)->columns(6),
+                        ])->columnSpan(6)->columns(12),
                     Section::make('Shartnoma haqida ma’lumot')
                         ->schema([
                             Placeholder::make('created_at')
@@ -200,6 +328,8 @@ class ContractResource extends Resource
                         Wizard::make([
                                 Step::make('Подробности договора')
                                     ->schema([
+                                        Hidden::make('customer_id')->default(auth()->user()->id),
+                                        Hidden::make('business_id')->default(auth()->user()->business_id),
                                         Section::make('')
                                             ->schema([
                                             Select::make('branch_id')
@@ -297,7 +427,6 @@ class ContractResource extends Resource
                                                 TextInput::make('passport_number')
                                                     ->label('Pasport raqami')
                                                     ->numeric()
-                                                    // ->required()
                                                     ->reactive()
                                                     ->suffixAction(
                                                         Action::make('search_client')
@@ -305,9 +434,113 @@ class ContractResource extends Resource
                                                             ->action(fn ($get, $set) => self::searchClient($get, $set))
                                                     )
                                                     ->columnSpan(6),
+                                                    // Actions::make([
+                                                    //         Action::make('add_client')
+                                                    //             ->label("Ma'lumotlarni qo'lda kiritish")
+                                                    //             ->modalWidth(MaxWidth::TwoExtraLarge)
+                                                    //             ->modalHeading('Yangi mijoz qo‘shish')
+                                                    //             ->form([
+                                                    //                 Section::make()
+                                                    //                     ->schema([
+                                                    //                         TextInput::make('new_first_name')
+                                                    //                             ->label('Ism')
+                                                    //                             ->placeholder('Ism')
+                                                    //                             ->required()
+                                                    //                             ->maxLength(255)->columnSpan(6),
+                                                    //                         TextInput::make('new_last_name')
+                                                    //                             ->label('Familiya')
+                                                    //                             ->placeholder('Familiya')
+                                                    //                             ->required()
+                                                    //                             ->maxLength(255)->columnSpan(6),
+                                                    //                         TextInput::make('new_patronymic')
+                                                    //                             ->label('Otasining ismi')
+                                                    //                             ->placeholder('Otasining ismi')
+                                                    //                             ->required()
+                                                    //                             ->maxLength(255)->columnSpan(6),
+                                                    //                         Select::make('new_gender')
+                                                    //                             ->options([
+                                                    //                                 'female'=>'Ayol',
+                                                    //                                 'male'=>'Erkak',
+                                                    //                             ])
+                                                    //                             ->label('jinsi')
+                                                    //                             ->required()->columnSpan(6),
+                                                    //                         TextInput::make('new_birthplace')
+                                                    //                             ->label("Tug'ilgan joyi")
+                                                    //                             ->placeholder("Tug'ilgan joyi")
+                                                    //                             ->required()
+                                                    //                             ->maxLength(255)->columnSpan(6),
+                                                    //                         DatePicker::make('new_birthday')
+                                                    //                             ->label("Tug'ilgan kuni")
+                                                    //                             ->placeholder("Tug'ilgan kuni")
+                                                    //                             ->required()->columnSpan(6),
+                                                    //                         TextInput::make('new_passport_series')
+                                                    //                             ->label('Pasport seriyasi')
+                                                    //                             ->placeholder('Pasport seriyasi')
+                                                    //                             ->maxLength(2) // Maksimal 2 ta belgi
+                                                    //                             ->minLength(2) // Minimal 2 ta belgi
+                                                    //                             ->extraAttributes([
+                                                    //                                 'x-on:input' => "event.target.value = event.target.value.toUpperCase()"
+                                                    //                             ])
+                                                    //                             ->required()->columnSpan(6),
+                                                    //                         TextInput::make('new_passport_number')
+                                                    //                             ->label('Pasport raqami')
+                                                    //                             ->unique('clients', 'passport_number')
+                                                    //                             ->numeric()
+                                                    //                             ->placeholder('Pasport raqami')
+                                                    //                             ->required()
+                                                    //                             ->maxLength(7)->columnSpan(6),
+                                                    //                         TextInput::make('new_inn')
+                                                    //                             ->unique('clients', 'inn')
+                                                    //                             ->label('INN')
+                                                    //                             ->numeric()
+                                                    //                             ->placeholder('INN')
+                                                    //                             ->maxLength(15)->columnSpan(6),
+                                                    //                         TextInput::make('new_pinfl')
+                                                    //                             ->unique('clients', 'pinfl')
+                                                    //                             ->label('PINFL')
+                                                    //                             ->numeric()
+                                                    //                             ->placeholder('PINFL')
+                                                    //                             ->required()
+                                                    //                             ->maxLength(14)->columnSpan(6),
+                                                    //                         DatePicker::make('new_passport_date_issue')
+                                                    //                             ->label('Pasport berilgan sana')
+                                                    //                             ->required()->columnSpan(6),
+                                                    //                         DatePicker::make('new_passport_date_expiration')
+                                                    //                             ->label('Pasportning amal qilish muddati')
+                                                    //                             ->required()->columnSpan(6),
+                                                    //                     ])->columnSpan(12)->columns(12)
+                                                    //             ])
+                                                    //             ->action(function ($data, $livewire) {
+                                                    //                 $client = Client::create([
+                                                    //                     'customer_id' => auth()->user()->id,
+                                                    //                     'first_name' => $data['new_first_name'],
+                                                    //                     'last_name' => $data['new_last_name'],
+                                                    //                     'patronymic' => $data['new_patronymic'],
+                                                    //                     'gender' => $data['new_gender'],
+                                                    //                     'birthplace' => $data['new_birthplace'],
+                                                    //                     'birthday' => $data['new_birthday'],
+                                                    //                     'passport_series' => $data['new_passport_series'],
+                                                    //                     'passport_number' => $data['new_passport_number'],
+                                                    //                     'inn' => $data['new_inn'],
+                                                    //                     'pinfl' => $data['new_pinfl'],
+                                                    //                     'passport_date_issue' => $data['new_passport_date_issue'],
+                                                    //                     'passport_date_expiration' => $data['new_passport_date_expiration'],
+                                                    //                 ]);
+                                            
+                                                    //                 Notification::make()
+                                                    //                     ->title('Mijoz qo‘shildi!')
+                                                    //                     ->success()
+                                                    //                     ->body('Yangi mijoz ma\'lumotlari saqlandi.')
+                                                    //                     ->send();
+                                                                    
+                                                    //                 $livewire->form->fill([
+                                                    //                     'client_id' => $client->id,
+                                                    //                     'passport_number' => $client->passport_number,
+                                                    //                     'passport_series' => $client->passport_series,
+                                                    //                 ]);
+                                                    //             }),
+                                                    //         ])->columnSpan(6),
                                                 Hidden::make('client_id'),
-                                                Hidden::make('customer_id')->default(auth()->user()->id),
-                                                Hidden::make('business_id')->default(auth()->user()->business_id),
                                                 Placeholder::make('fios')
                                                     // ->label('Документ: ')
                                                     ->label(fn (Get $get) => Client::find($get('client_id')) ? 'Документ: '.Client::find($get('client_id'))->last_name .' '. Client::find($get('client_id'))->first_name.' '.Client::find($get('client_id'))->patronymic : 'Документ:')->columnSpan(12),
@@ -355,7 +588,25 @@ class ContractResource extends Resource
                                                             ->label('Telefonlar')
                                                             ->addable(true) // "+" tugmasini qo'shish
                                                             ->deletable(true) // O'chirish tugmasini qo'shish
-                                                            ->columnSpan(12)
+                                                            ->columnSpan(12),
+                                                    // Repeater::make('phones')
+                                                    //         ->schema([
+                                                    //             TextInput::make('')->label('Phone') // Bo'sh key - faqat qiymat saqlash uchun
+                                                    //                 ->required()
+                                                    //                 ->maxLength(15),
+                                                    //         ])
+                                                    //         ->columnSpan(12)
+                                                    //         ->defaultItems(2)
+                                                    //         ->afterStateHydrated(function ($component, $state) {
+                                                    //             // Ma'lumotni massiv shaklida chiqarish
+                                                    //             if (is_array($state)) {
+                                                    //                 $component->state(collect($state)->pluck(null)->toArray());
+                                                    //             }
+                                                    //         })
+                                                    //         ->addable(true) // "+" tugmasini qo'shish
+                                                    //         ->deletable(true) // O'chirish tugmasini qo'shish
+                                                    //         ->dehydrateStateUsing(fn ($state) => collect($state)->pluck(null)->toArray())
+                                                    
                                             ])->columns(12)
                                 ]),
                                 
@@ -416,22 +667,6 @@ class ContractResource extends Resource
                                                         Hidden::make('card_id')->default(1)
                                                     ])->columns(8)->columnSpan(12)
                                             ]),
-                                        // Tabs\Tab::make('Atmos')
-                                        //     ->schema([
-                                        //         Group::make()
-                                        //             ->schema([
-                                        //                 TextInput::make('atmos_car_number')
-                                        //                     ->label('Karta raqami')
-                                        //                     ->placeholder('Karta raqami')
-                                        //                     ->mask('9999-9999-9999-9999')
-                                        //                     ->columnSpan(12),
-                                        //                 TextInput::make('atmos_expiry_date')
-                                        //                     ->label('Amal qilish muddati')
-                                        //                     ->placeholder('Amal qilish muddati')
-                                        //                     ->mask('99/99')
-                                        //                     ->columnSpan(12),
-                                        //             ])->columns(8)->columnSpan(12)
-                                        //     ]),
                                     ])->columnSpan(8)->columns(8),
                                     Group::make()
                                     ->schema([
@@ -653,8 +888,16 @@ class ContractResource extends Resource
                                                     ->content(fn (Get $get) => number_format(Tariff::find($get('tariff_id'))?->max_amount) . ' swm' ?? '-')->columnSpan(6),
                                                 ])
                                                 ->columns(12)->columnSpan(4), // **O‘ng tomonda 1 ustun egallaydi**
-                            ])
+                                            ]),
                         ])->columnSpan(3)->columns(12),
+                        
+                        Actions::make([
+                            Action::make('calculateSchedule')
+                                ->label('To‘lov grafigini olish')
+                                ->modal()
+                                ->action(fn ($livewire) => $livewire->generatePaymentSchedule()) 
+                                ->modalContent(fn ($livewire) =>     $livewire->generatePaymentSchedule())
+                        ])
                     ])
             ];
     }
@@ -691,6 +934,35 @@ class ContractResource extends Resource
                 ->send();
         }
     }
+    
+    public static function generateWordFile($record)
+    {
+        // Shablon fayl yo‘li
+        $templatePath = storage_path('app/templates/contract_template.doc');
+        $tempPath = storage_path('app/public/contract_' . $record->id . '.doc');
+
+        // ZIP orqali faylni ochamiz
+        copy($templatePath, $tempPath);
+        $zip = new \ZipArchive();
+        if ($zip->open($tempPath) === true) {
+            // Asosiy Word matn faylini o‘qiymiz
+            $xml = $zip->getFromName('word/document.xml');
+
+            $xml = str_replace('${client_first_name}', $record->client->first_name, $xml);
+            // $xml = str_replace('${client_last_name}', $record->client->last_name, $xml);
+            // $xml = str_replace('${client_patronymic}', $record->client->patronymic, $xml);
+            // $xml = str_replace('${created_at}', $record->created_at->format('Y-m-d'), $xml);
+            // $xml = str_replace('${client_name}', $record->client_name ?? 'Noma’lum', $xml);
+            // $xml = str_replace('${total_amount}', number_format($record->total_amount, 2), $xml);
+
+            // Yangilangan XML'ni qayta ZIP ichiga qo‘shish
+            $zip->addFromString('word/document.xml', $xml);
+            $zip->close();
+        }
+
+        // Foydalanuvchiga yuklab berish
+        return response()->download($tempPath)->deleteFileAfterSend(true);
+    }
     public static function table(Table $table): Table
     {
         return $table
@@ -702,8 +974,25 @@ class ContractResource extends Resource
                 TextColumn::make('client')
                     ->label('FIO')
                     ->formatStateUsing(function ($state) {
-                        return $state->first_name . ' '. $state->last_name.' '.$state->patronymic; // Masalan, 1000.50 ni 1,000.50 formatida
-                    }),
+                        return '<span style="color: #3EB0C0;">' .$state->first_name . ' '. $state->last_name.' '.$state->patronymic.'</span>'; // Masalan, 1000.50 ni 1,000.50 formatida
+                    })
+                    ->html() 
+                    ->action(
+                        Tables\Actions\Action::make('view_contracts')
+                                ->label('Shartnomalarni ko‘rish')
+                                ->modalHeading(fn ($record) => $record->client->first_name . ' '. $record->client->last_name.' '.$record->client->patronymic)
+                                ->modalContent(function ($record) {
+                                    $contracts = $record->client->contracts;
+                                    return view('tables.modals.contract-list', [
+                                        'contracts' => $contracts,
+                                        'client_id'=>$record->client->id
+                                    ]);
+                                })
+                                ->modalWidth('lg')
+                                ->slideOver()
+                                ->modalSubmitAction(false) // "Saqlash" tugmasini o‘chirish
+                                ->modalCancelActionLabel('Yopish')
+                    ),
                 TextColumn::make('debt')
                     ->label('Qiymat')
                     ->getStateUsing(function (Contract $record) {
@@ -720,7 +1009,6 @@ class ContractResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

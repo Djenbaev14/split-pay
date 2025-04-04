@@ -43,16 +43,17 @@ class BusinessPanelProvider extends PanelProvider
             )
             ->brandName('SplitPay')
             ->navigationGroups([
-                NavigationGroup::make()
-                    ->label('Филиалы')
-                    ->icon('heroicon-o-rectangle-stack'),
-                NavigationGroup::make()
-                    ->label('Контракты')
-                    ->icon('heroicon-o-rectangle-stack'),
-                NavigationGroup::make()
-                    ->label('Клиенты')
-                    ->icon('heroicon-o-rectangle-stack'),
+                // NavigationGroup::make()
+                //     ->label('Филиалы')
+                //     ->icon('heroicon-o-rectangle-stack'),
+                // NavigationGroup::make()
+                //     ->label('Контракты')
+                //     ->icon('heroicon-o-rectangle-stack'),
+                // NavigationGroup::make()
+                //     ->label('Клиенты')
+                //     ->icon('heroicon-o-rectangle-stack'),
             ])
+            ->plugin(FilamentSpatieRolesPermissionsPlugin::make())
             ->discoverWidgets(in: app_path('Filament/Business/Widgets'), for: 'App\\Filament\\Business\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,

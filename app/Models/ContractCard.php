@@ -14,4 +14,8 @@ class ContractCard extends Model
     {
         return $this->hasMany(Card::class);
     }
+    public function contract()
+    {
+        return $this->belongsTo(Contract::class);
+    }
 }

@@ -24,8 +24,8 @@ class TariffResource extends Resource
 {
     protected static ?string $model = Tariff::class;
 
-    // protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    protected static ?string $navigationGroup = 'Филиалы';
+    protected static ?string $navigationIcon = 'fas-percent';
+    // protected static ?string $navigationGroup = 'Филиалы';
 
     protected static ?int $navigationSort = 2;
     public static function form(Form $form): Form
@@ -74,13 +74,13 @@ class TariffResource extends Resource
                             ->required()
                             ->numeric()
                             ->columnSpan(6),
-                        TextInput::make('max_period_month')
-                            ->label('Maksimal davr')
+                        TextInput::make('min_period_month')
+                            ->label('Minimal davr')
                             ->required()
                             ->numeric()
                             ->columnSpan(6),
-                        TextInput::make('min_period_month')
-                            ->label('Minimal davr')
+                        TextInput::make('max_period_month')
+                            ->label('Maksimal davr')
                             ->required()
                             ->numeric()
                             ->columnSpan(6),

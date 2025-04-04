@@ -16,9 +16,9 @@ return new class extends Migration
             $table->unsignedBigInteger('contract_id');
             $table->foreign('contract_id')->references('id')->on('contracts');
             $table->date('due_date'); // To‘lov muddati
-            $table->integer('principal_amount'); // Asosiy qarz
-            $table->integer('interest_amount'); // Procent qarz
-            $table->integer('total_amount'); // Umumiy to‘lov (asosiy qarz + foiz qarzi)
+            $table->decimal('principal_amount',11,2); // Asosiy qarz
+            $table->decimal('interest_amount',11,2); // Procent qarz
+            $table->decimal('total_amount',11,2); // Umumiy to‘lov (asosiy qarz + foiz qarzi)
             $table->boolean('is_paid')->default(false); // To‘langan yoki yo‘q
             $table->date('paid_at')->nullable(); // To‘langan sana (agar bo‘lsa)
             $table->timestamps();
