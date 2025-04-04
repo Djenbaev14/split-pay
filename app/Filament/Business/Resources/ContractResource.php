@@ -44,6 +44,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Forms\Components\View;
 use Filament\Support\Enums\MaxWidth;
+use Illuminate\Support\Facades\Log;
+use PhpOffice\PhpWord\TemplateProcessor;
 
 class ContractResource extends Resource
 {
@@ -938,8 +940,8 @@ class ContractResource extends Resource
     public static function generateWordFile($record)
     {
         // Shablon fayl yo‘li
-        $templatePath = storage_path('app/templates/contract_template.doc');
-        $tempPath = storage_path('app/public/contract_' . $record->id . '.doc');
+        $templatePath = storage_path('app/templates/contract_template.docx');
+        $tempPath = storage_path('app/public/contract_' . $record->id . '.docx');
 
         // ZIP orqali faylni ochamiz
         copy($templatePath, $tempPath);
@@ -948,13 +950,13 @@ class ContractResource extends Resource
             // Asosiy Word matn faylini o‘qiymiz
             $xml = $zip->getFromName('word/document.xml');
 
-            $xml = str_replace('${client_first_name}', $record->client->first_name, $xml);
-            // $xml = str_replace('${client_last_name}', $record->client->last_name, $xml);
+            $xml = str_replace('${  }', $record->client->first_name, $xml);
+            $xml = str_replace('${client_last_name}', $record->client->last_name, $xml);
             // $xml = str_replace('${client_patronymic}', $record->client->patronymic, $xml);
             // $xml = str_replace('${created_at}', $record->created_at->format('Y-m-d'), $xml);
             // $xml = str_replace('${client_name}', $record->client_name ?? 'Noma’lum', $xml);
             // $xml = str_replace('${total_amount}', number_format($record->total_amount, 2), $xml);
-
+            
             // Yangilangan XML'ni qayta ZIP ichiga qo‘shish
             $zip->addFromString('word/document.xml', $xml);
             $zip->close();
