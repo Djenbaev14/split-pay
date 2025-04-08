@@ -277,14 +277,7 @@ class ContractResource extends Resource
                                     'value' => $record->customer->name,
                                 ]))
                                 ->columnSpan(6),
-                            Placeholder::make('xodim')
-                                ->label(false)
-                                ->content(fn ($record) => view('inline-label-value', [
-                                    'label' => 'Xodim',
-                                    'value' => $record->customer->name,
-                                ]))
-                                ->columnSpan(6),
-                            Placeholder::make('xodim')
+                            Placeholder::make('overdue_debts')
                                 ->label(false)
                                 ->content(fn ($record) => view('inline-label-value', [
                                     'label' => "Muddati o'tgan qarzlar",

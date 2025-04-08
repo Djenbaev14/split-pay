@@ -99,8 +99,8 @@
         </div>
         <div class="table-wrapper" style="float: right">
             <div class="header">
-                <p style="font-size:8px">Шартнома № {{ $contract->id }}</p>
-                <p style="font-size:8px;">Шартнома санаси: {{ $contract->created_at->format('d.m.Y') }}</p>
+                <p style="font-size:8px"><strong>Шартнома № {{ $contract->id }}</strong></p>
+                <p style="font-size:8px;"><strong>Шартнома санаси: {{ $contract->created_at->format('d.m.Y') }}</strong></p>
                 <h2 style="font-size:14px">{{$contract->client->first_name}} {{$contract->client->last_name}} {{$contract->client->patronymic}}</h2>
             </div>
             <table>
