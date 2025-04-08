@@ -17,4 +17,12 @@ class Client extends Model
     {
         return $this->hasMany(Contract::class)->orderBy('id','desc');
     }
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($client) {
+            $client->passport_series=strtoupper($client->passport_series);
+        });
+    }
 }

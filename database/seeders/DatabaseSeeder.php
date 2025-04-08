@@ -67,7 +67,12 @@ class DatabaseSeeder extends Seeder
             'key'=>'pending',
             'color'=>'#a39e0ca6',
         ]);
-        Status::create(attributes: [
+        Status::create([
+            'name'=>'Ожидает первоначальный взнос',
+            'key'=>'initial_payment',
+            'color'=>'#a39e0ca6',
+        ]);
+        Status::create( [
             'name'=>'Актив',
             'key'=>'active',
             'color'=>'#0d6efd',

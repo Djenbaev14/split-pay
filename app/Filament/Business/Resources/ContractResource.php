@@ -12,6 +12,7 @@ use App\Models\Region;
 use App\Models\Client;
 use App\Models\Contract;
 use App\Models\Tariff;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\Actions;
@@ -41,11 +42,16 @@ use Filament\Forms\Components\Actions\Action;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Forms\Components\View;
 use Filament\Support\Enums\MaxWidth;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpWord\TemplateProcessor;
+use Illuminate\Support\Facades\Response;
 
 class ContractResource extends Resource
 {
@@ -140,6 +146,7 @@ class ContractResource extends Resource
                                     Actions::make([
                                         Action::make('contract_download')
                                             ->label(false)
+                                            ->tooltip('Shartnomani yuklab olish')
                                             ->icon('fas-download')
                                             ->action(fn ($record) => static::generateWordFile($record))
                                             ->color('primary')
@@ -309,19 +316,66 @@ class ContractResource extends Resource
                         Section::make('To‘lov jadvali')
                             // ->hidden(fn () => auth()->id() !== 1) // Faqat sizga ko‘rsatish
                             ->schema([
+                            Actions::make([
+                                Action::make('grafik_download')
+                                    ->label(false)
+                                    ->icon('fas-print')
+                                    ->color('success')
+                                    ->tooltip('Chop etish')
+                                    ->action(function ($record) {
+                                        // PDFni yaratish va yuklash
+                                        $pdf = Pdf::loadView('pdf.contract-schedule', [
+                                            'contract' => $record,
+                                            // 'schedules' => static::generateScheduleData($record), // Grafigi ma'lumotlari
+                                        ])->setPaper([0, 0, 900, 600], 'landscape') // Albom yo'nalishi
+                                        ->setOption('defaultFont', 'Arial')
+                                        ->setOption('isHtml5ParserEnabled', true)
+                                        ->setOption('isRemoteEnabled', true)
+                                        ->setOption('orientation', 'landscape');
+                
+                                        return response()->streamDownload(
+                                            fn () => print($pdf->output()),
+                                            "contract_schedule_{$record->id}.pdf"
+                                        );
+                                    })
+                                    ->extraAttributes(['style' => 'border-radius: 100%; padding: 10px 5px 10px 10px;'])
+                            ])->columnSpan(12),
                             Placeholder::make('comment')
                                 ->label(false)
                                 ->content(fn ($record) => view('contract.payments-table', [
                                     'payments' => $record->payments,
                                 ]))
                                 ->columnSpan(12),
+                            
                                 // View::make('contract.payments-table')
                                 //     ->viewData(['payments' => fn ($livewire) => $livewire->record->payments,])
-                            ])->columns(12)->columnSpan(12)
+                            ])->columns(12)->columnSpan(12),
+                        
+                        Tabs::make('')
+                        ->tabs([
+                            Tab::make("To'lov tarixi")
+                                ->schema([
+                                ]),
+                            Tab::make('Tranzaksiyalar jurnali')
+                                ->schema([
+                                ]),
+                            Tab::make('Shartnomalar tarixi')
+                                ->schema([
+                                    Placeholder::make('client-contacts')
+                                        ->label(false)
+                                        ->content(fn ($record) => view('contract.contracts', [
+                                            'label' => 'Yaratilgan',
+                                            'contracts' => $record->client->contracts,
+                                        ]))
+                                    ->columnSpan(12),
+                                ]),
+                            Tab::make("KATM to'lov")
+                                ->schema([
+                                ]),
+                        ])->columnSpan(12)->columns(12),
                 ])->columnSpan(12)->columns(12)
         ];
     }
-
     public static function createSchema(): array
     {
         return [
@@ -841,10 +895,10 @@ class ContractResource extends Resource
                         
                                                 Placeholder::make('place_region')
                                                     ->label('Region:')
-                                                    ->content(fn (Get $get) => Region::find($get('region_id')->name ?? ''))->columnSpan(4),
+                                                    ->content(fn (Get $get) => Region::find($get('region_id'))->name ?? '')->columnSpan(4),
                                                 Placeholder::make('place_district')
                                                     ->label('Tuman:')
-                                                    ->content(fn (Get $get) => District::find($get('district_id')->name ?? ''))->columnSpan(4),
+                                                    ->content(fn (Get $get) => District::find($get('district_id'))->name ?? '')->columnSpan(4),
                                                 Placeholder::make('place_product')
                                                     ->label('Mahsulotlarga izohlar:')
                                                     ->content(fn (Get $get) => $get('product')  ?? '-')->columnSpan(4),
@@ -941,29 +995,24 @@ class ContractResource extends Resource
     {
         // Shablon fayl yo‘li
         $templatePath = storage_path('app/templates/contract_template.docx');
-        $tempPath = storage_path('app/public/contract_' . $record->id . '.docx');
+        // $tempPath = storage_path('app/public/contract_' . $record->id . '.docx');
 
-        // ZIP orqali faylni ochamiz
-        copy($templatePath, $tempPath);
-        $zip = new \ZipArchive();
-        if ($zip->open($tempPath) === true) {
-            // Asosiy Word matn faylini o‘qiymiz
-            $xml = $zip->getFromName('word/document.xml');
+        // Load the template
+        $templateProcessor = new TemplateProcessor($templatePath);
 
-            $xml = str_replace('${  }', $record->client->first_name, $xml);
-            $xml = str_replace('${client_last_name}', $record->client->last_name, $xml);
-            // $xml = str_replace('${client_patronymic}', $record->client->patronymic, $xml);
-            // $xml = str_replace('${created_at}', $record->created_at->format('Y-m-d'), $xml);
-            // $xml = str_replace('${client_name}', $record->client_name ?? 'Noma’lum', $xml);
-            // $xml = str_replace('${total_amount}', number_format($record->total_amount, 2), $xml);
-            
-            // Yangilangan XML'ni qayta ZIP ichiga qo‘shish
-            $zip->addFromString('word/document.xml', $xml);
-            $zip->close();
-        }
+        // Replace placeholders with actual data
+        $templateProcessor->setValue('client_first_name', $record->client->first_name);
+        // $templateProcessor->setValue('date', now()->toDateString());
+        // $templateProcessor->setValue('details', $record->details);
 
-        // Foydalanuvchiga yuklab berish
-        return response()->download($tempPath)->deleteFileAfterSend(true);
+
+        // Save the modified document to a temporary file
+        $tempFile = storage_path('app/contracts/contract_' . $record->id . '.docx');
+        $templateProcessor->saveAs($tempFile);
+
+        // Return the response to download the generated file
+        return Response::download($tempFile, 'contract_' . $record->id . '.docx')
+                  ->deleteFileAfterSend(true); // Delete the file after sending it to the client
     }
     public static function table(Table $table): Table
     {
@@ -1008,9 +1057,71 @@ class ContractResource extends Resource
             ])
             ->defaultSort('id','desc')
             ->filters([
-                //
-            ])
+                SelectFilter::make('branch_id')
+                    ->label('Филиалы')
+                    ->multiple()
+                    ->searchable()
+                    ->options(fn () => Branch::where('customer_id',auth()->user()->id)->get()->pluck('name', 'id')->map(fn ($name) =>$name))
+                    ->preload(),
+                    
+                Filter::make('fio')
+                ->form([
+                    Grid::make(3)
+                        ->schema([
+                            TextInput::make('contract_number')
+                                ->label('Shartnoma raqami')
+                                ->placeholder('Shartnoma raqami')
+                                ->columnSpan(1),
+            
+                            TextInput::make('fio')
+                                ->label('FIO')
+                                ->placeholder('FIO')
+                                ->columnSpan(1),
+            
+                            TextInput::make('passport')
+                                ->label('Pasport seriyasi va raqami')
+                                ->placeholder('Pasport seriyasi va raqami')
+                                ->columnSpan(1)
+                                ->extraAttributes([
+                                    'x-on:input' => "event.target.value = event.target.value.toUpperCase()"
+                                ])
+                        ])
+                ])->columnSpan(3)
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                        
+                        ->when($data['contract_number'], function ($query) use ($data) {
+                            $query->where('id', 'like', '%' . $data['contract_number'] . '%');
+                        })
+
+                        ->when($data['fio'], function ($query) use ($data) {
+                            $search = $data['fio'];
+
+                            $query->whereHas('client', function ($q) use ($search) {
+                                $q->whereRaw("CONCAT(first_name, ' ', last_name, ' ', patronymic) LIKE ?", ["%{$search}%"])
+                                ->orWhereRaw("CONCAT(last_name, ' ', first_name, ' ', patronymic) LIKE ?", ["%{$search}%"])
+                                ;
+                            });
+                        })
+                        
+                        ->when($data['passport'], function ($query) use ($data) {
+                            $search = $data['passport'];
+
+                            $query->whereHas('client', function ($q) use ($search) {
+                                $q->whereRaw("CONCAT(passport_series, '', passport_number) LIKE ?", ["%{$search}%"])
+                                ->orWhereRaw("CONCAT(passport_number, '', passport_series) LIKE ?", ["%{$search}%"])
+                                ;
+                            });
+                        });
+                    }),
+                
+            ],layout: FiltersLayout::AboveContent)
             ->actions([
+            ])
+            ->groups([
+                Tables\Grouping\Group::make('branch.name')
+                    ->label('Филиал')
+                    ->collapsible(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -1018,7 +1129,7 @@ class ContractResource extends Resource
                 ]),
             ]);
     }
-
+    
     public static function getRelations(): array
     {
         return [

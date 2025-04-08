@@ -67,6 +67,13 @@ class Contract extends Model
 
         static::created(function ($contract) {
             $contract->generatePaymentSchedule();
+            
+        });
+        
+        static::creating(function ($contract) {
+            if ($contract->down_payment && $contract->down_payment > 0) {
+                $contract->status_id = 2; 
+            }
         });
     }
 
@@ -103,5 +110,6 @@ class Contract extends Model
             ]);
         }
     }
+    
 
 }
