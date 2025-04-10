@@ -6,7 +6,9 @@ use App\Filament\Business\Resources\ContractResource\Pages;
 use App\Filament\Business\Resources\ContractResource\RelationManagers;
 use App\Models\Branch;
 use App\Models\ClientContact;
+use App\Models\ContractCard;
 use App\Models\District;
+use App\Models\PaymentMethod;
 use App\Models\PaymentSchedule;
 use App\Models\Region;
 use App\Models\Client;
@@ -50,6 +52,8 @@ use Filament\Forms\Components\View;
 use Filament\Support\Enums\MaxWidth;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
+use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\TemplateProcessor;
 use Illuminate\Support\Facades\Response;
 
@@ -152,12 +156,66 @@ class ContractResource extends Resource
                                             ->color('primary')
                                             ->extraAttributes(['style' => 'border-radius: 100%; padding: 10px 5px 10px 10px;'])
                                     ])->columnSpan(6),
-                                    Placeholder::make('card')
-                                        ->label('')
-                                        ->content(fn ($record) => view('contract.plastik-card', [
-                                            'card' => $record->contractCards,
-                                        ]))
-                                        ->columnSpan(12),
+                                    Group::make()
+                                        ->schema([
+                                        Actions::make([
+                                            Action::make('add_contact')
+                                                ->label("Karta qo'shish")
+                                                ->icon('fas-plus')
+                                                ->button()
+                                                ->color('primary')
+                                                ->modalWidth('lg')
+                                                ->modalHeading("Karta qo'shish")
+                                                ->modalSubmitActionLabel('Saqlash')
+                                                ->modalCancelActionLabel('Bekor qilish')
+                                                ->form([
+                                                    Tabs::make('Tabs')
+                                                        ->tabs([
+                                                            Tabs\Tab::make('Uzcard')
+                                                                ->schema([
+                                                                    Group::make()
+                                                                        ->schema([
+                                                                            TextInput::make('car_number')
+                                                                                ->label('Karta raqami')
+                                                                                ->placeholder('Karta raqami')
+                                                                                ->mask('9999-9999-9999-9999')
+                                                                                ->nullable()
+                                                                                ->columnSpan(12),
+                                                                            TextInput::make('expiry_date')
+                                                                                ->label('Amal qilish muddati')
+                                                                                ->placeholder('Amal qilish muddati')
+                                                                                ->nullable()
+                                                                                ->mask('99/99')
+                                                                                ->columnSpan(12),
+                                                                            TextInput::make('phone')
+                                                                                ->tel()
+                                                                                ->label('Telefon')
+                                                                                ->placeholder('Telefon')
+                                                                                ->mask('+998999999999')
+                                                                                ->nullable()
+                                                                                ->columnSpan(12),
+                                                                            Hidden::make('card_id')->default(1)
+                                                                        ])->columns(8)->columnSpan(12)
+                                                                ]),
+                                                        ])->columnSpan(8)->columns(8),
+                                                ])
+                                                ->action(function (array $data,$record) {
+                                                    ContractCard::create([
+                                                        'contract_id' => $record->id,
+                                                        'car_number' => $data['car_number'],
+                                                        'expiry_date' => $data['expiry_date'],
+                                                        'phone' => $data['phone'],
+                                                        'card_id' => $data['card_id'],
+                                                    ]);
+                                                })
+                                            ])->columnSpan(3),
+                                        Placeholder::make('card')
+                                            ->label('')
+                                            ->content(fn ($record) => view('contract.plastik-card', [
+                                                'cards' => $record->contractCards,
+                                            ]))
+                                            ->columnSpan(9),
+                                        ])->columnSpan(12)->columns(12)
                                 ]),
                             Tab::make('Kontaktlar')
                                 ->schema([
@@ -333,12 +391,56 @@ class ContractResource extends Resource
                                     })
                                     ->extraAttributes(['style' => 'border-radius: 100%; padding: 10px 5px 10px 10px;'])
                             ])->columnSpan(12),
-                            Placeholder::make('comment')
-                                ->label(false)
-                                ->content(fn ($record) => view('contract.payments-table', [
-                                    'payments' => $record->payments,
-                                ]))
-                                ->columnSpan(12),
+                                Placeholder::make('comment')
+                                    ->label(false)
+                                    ->content(fn ($record) => view('contract.payments-table', [
+                                        'payments' => $record->payments,
+                                    ]))
+                                    ->columnSpan(12),
+                                Actions::make([
+                                    Action::make('payments')
+                                        ->label("To'lovni qabul qilish")
+                                        ->icon('fas-circle-check')
+                                        ->button()
+                                        ->color('primary')
+                                        ->modalWidth('lg')
+                                        ->modalHeading("To'lovni qabul qilish")
+                                        ->modalSubmitActionLabel('Saqlash')
+                                        ->modalCancelActionLabel('Bekor qilish')
+                                        ->form([
+                                            Select::make('payment_method_id')
+                                                ->label("To'lov turi")
+                                                ->options(PaymentMethod::orderBy('id','desc')->get()->pluck('name','id'))
+                                                ->reactive()
+                                                ->afterStateUpdated(fn (callable $set) => $set('card_id', null))
+                                                ->required(),
+                                            Select::make('card_id')
+                                                ->label('Karta')
+                                                ->options(function (callable $get, $livewire) {
+                                                    $record = $livewire->getRecord();
+                                            
+                                                    return $record->contractCards->mapWithKeys(function ($card) {
+                                                        $number = $card->car_number;
+                                                        $masked = substr($number, 0, 4) . ' **** **** ' . substr($number, -4);
+                                                        return [$card->id => $masked];
+                                                    });
+                                                })
+                                                ->reactive()
+                                                ->visible(fn (callable $get) => PaymentMethod::find($get('payment_method_id'))?->type == 'online') 
+                                                ->required(),
+                                            Forms\Components\TextInput::make('amount')
+                                                ->label('Miqdori')
+                                                ->required(),
+                                        ])
+                                        ->action(function (array $data,$record) {
+                                            ClientContact::create([
+                                                'client_id' => $record->client_id,
+                                                'fio' => $data['fio'],
+                                                'phone' => $data['phone'],
+                                                'relation' => $data['relation'],
+                                            ]);
+                                        }),
+                                ])->columnSpan(3),
                             
                                 // View::make('contract.payments-table')
                                 //     ->viewData(['payments' => fn ($livewire) => $livewire->record->payments,])
@@ -695,25 +797,27 @@ class ContractResource extends Resource
                                         Tabs\Tab::make('Uzcard')
                                             ->schema([
                                                 Group::make()
-                                                    ->relationship('contractCards') 
                                                     ->schema([
-                                                        TextInput::make('car_number')
+                                                        TextInput::make('contractCards.car_number')
                                                             ->label('Karta raqami')
                                                             ->placeholder('Karta raqami')
                                                             ->mask('9999-9999-9999-9999')
+                                                            ->nullable()
                                                             ->columnSpan(12),
-                                                        TextInput::make('expiry_date')
+                                                        TextInput::make('contractCards.expiry_date')
                                                             ->label('Amal qilish muddati')
                                                             ->placeholder('Amal qilish muddati')
+                                                            ->nullable()
                                                             ->mask('99/99')
                                                             ->columnSpan(12),
-                                                        TextInput::make('phone')
+                                                        TextInput::make('contractCards.phone')
                                                             ->tel()
                                                             ->label('Telefon')
                                                             ->placeholder('Telefon')
                                                             ->mask('+998999999999')
+                                                            ->nullable()
                                                             ->columnSpan(12),
-                                                        Hidden::make('card_id')->default(1)
+                                                        Hidden::make('contractCards.card_id')->default(1)
                                                     ])->columns(8)->columnSpan(12)
                                             ]),
                                     ])->columnSpan(8)->columns(8),
@@ -876,7 +980,7 @@ class ContractResource extends Resource
                         
                                                 Placeholder::make('place_grace_period_month')
                                                     ->label("Dastlabki to'lov:")
-                                                    ->content(fn (Get $get) => number_format($get('down_payment'))  ?? '-')->columnSpan(4),
+                                                    ->content(fn (Get $get) => $get('down_payment')  ?? '-')->columnSpan(4),
                         
                                                 Placeholder::make('place_payment_day')
                                                     ->label("To'lov kuni")
@@ -950,6 +1054,7 @@ class ContractResource extends Resource
                     ])
             ];
     }
+    
 
     public static function searchClient($get,$set)
     {
@@ -986,26 +1091,67 @@ class ContractResource extends Resource
     
     public static function generateWordFile($record)
     {
-        // Shablon fayl yo‘li
+        
         $templatePath = storage_path('app/templates/contract_template.docx');
-        // $tempPath = storage_path('app/public/contract_' . $record->id . '.docx');
-
-        // Load the template
+        $fileName = 'shartnoma_' . $record->client->first_name."_".$record->client->last_name."_".$record->client->patronymic."_".$record->created_at->format('M d, Y'). '.docx';
+        
+        // Yangi TemplateProcessor obyekti
         $templateProcessor = new TemplateProcessor($templatePath);
 
-        // Replace placeholders with actual data
+        // O'zgaruvchilarni to‘ldiramiz
+        $templateProcessor->setValue('contract_id', $record->id);
+        $templateProcessor->setValue('seller', $record->customer->name);
+        $templateProcessor->setValue('contract_created', $record->created_at->format('M d, Y - H:i'));
         $templateProcessor->setValue('client_first_name', $record->client->first_name);
-        // $templateProcessor->setValue('date', now()->toDateString());
-        // $templateProcessor->setValue('details', $record->details);
+        $templateProcessor->setValue('client_last_name', $record->client->last_name);
+        $templateProcessor->setValue('client_patronymic', $record->client->patronymic);
+        $templateProcessor->setValue('region', $record->contractDetail->region->name);
+        $templateProcessor->setValue('district', $record->contractDetail->district->name);
+        $templateProcessor->setValue('address', $record->contractDetail->address);
+        $templateProcessor->setValue('mfy_address', $record->contractDetail->mfy_address);
+        $templateProcessor->setValue('passport_address', $record->contractDetail->passport_address);
+        $templateProcessor->setValue('position', $record->contractDetail->position);
+        $templateProcessor->setValue('workplace', $record->contractDetail->workplace);
+        $templateProcessor->setValue('passport_series', $record->client->passport_series);
+        $templateProcessor->setValue('passport_number', $record->client->passport_number);
+        $templateProcessor->setValue('passport_date_issue', $record->client->passport_date_issue);
+        $templateProcessor->setValue('product', $record->product);
+        $templateProcessor->setValue('comment', $record->comment);
+        $templateProcessor->setValue('total_amount', number_format($record->amount,2,'.',' '));
+        $templateProcessor->setValue('monthly_payment', number_format($record->paymentSchedule->avg('total_amount'),2,'.',' '));
+        $templateProcessor->setValue('down_payment', number_format($record->down_payment,2,'.',' '));
+        $templateProcessor->setValue('residual_debt', number_format($record->paymentSchedule->sum('total_amount'),2,'.',' '));
+        $templateProcessor->setValue('period_month', $record->period_month);
+        $templateProcessor->setValue('company_name', $record->branch->company_name);
+        $templateProcessor->setValue('company_address', $record->branch->address);
+        $templateProcessor->setValue('company_bank', $record->branch->bankInfo->bank);
+        $templateProcessor->setValue('company_inn', $record->branch->bankInfo->inn);
+        $templateProcessor->setValue('company_mfo', $record->branch->bankInfo->mfo);  
+        $templateProcessor->setValue('company_payment_account', $record->branch->bankInfo->payment_account);  
+        $templateProcessor->setValue('company_phone', $record->branch->telegram_phone);  
+        $templateProcessor->setValue('company_owner', $record->branch->customer->name);  
+        $templateProcessor->setValue('plastik_card', $record->contractCard ? substr($record->contractCards->car_number, 0, 4). "**** ****". substr($record->contractCards->car_number, -4) : '-');
+        $templateProcessor->setValue('inn', $record->client->inn);
+        $templateProcessor->setValue('phones', collect($record->contractDetail->phones)->pluck('phone')->implode(', '));
 
+        $schedules = $record->paymentSchedule;
 
-        // Save the modified document to a temporary file
-        $tempFile = storage_path('app/contracts/contract_' . $record->id . '.docx');
-        $templateProcessor->saveAs($tempFile);
+        // Jadval qatorlarini dinamik ravishda ko'paytirish
+        $templateProcessor->cloneRow('row_number', count($schedules));
 
-        // Return the response to download the generated file
-        return Response::download($tempFile, 'contract_' . $record->id . '.docx')
-                  ->deleteFileAfterSend(true); // Delete the file after sending it to the client
+        // Har bir qatorni to'ldirish
+        foreach ($schedules as $index => $schedule) {
+            $rowIndex = $index + 1;
+            $templateProcessor->setValue("row_number#{$rowIndex}", $rowIndex);
+            $templateProcessor->setValue("due_date#{$rowIndex}", $schedule->due_date);
+            $templateProcessor->setValue("amount#{$rowIndex}", number_format($schedule->total_amount, 2, '.', ' '));
+        }
+        // Saqlash uchun vaqtinchalik fayl
+        $tempPath = storage_path("app/public/{$fileName}");
+        $templateProcessor->saveAs($tempPath);
+
+        // Foydalanuvchiga yuklab berish
+        return response()->download($tempPath)->deleteFileAfterSend();
     }
     public static function table(Table $table): Table
     {

@@ -1,6 +1,6 @@
-<table class="w-100 border-collapse border border-gray-300 ">
+<table class="w-100 border-collapse border border-gray-300" style="font-size: 12px;white-space:nowrap">
     <thead>
-        <tr class="bg-gray-100">
+        <tr class="bg-gray-100" >
             <th class="border border-gray-300 px-4 py-2">№</th>
             <th class="border border-gray-300 px-4 py-2">To‘lov sanasi</th>
             <th class="border border-gray-300 px-4 py-2">Jami summa</th>

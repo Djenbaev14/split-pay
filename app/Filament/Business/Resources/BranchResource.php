@@ -77,20 +77,21 @@ class BranchResource extends Resource
                     ->columns(12),
                     // Bank ma'lumotlari
                 Forms\Components\Section::make('Bank ma\'lumotlari')
+                ->relationship('bankInfo')
                 ->schema([
-                    Forms\Components\TextInput::make('bankInfo.bank')
+                    Forms\Components\TextInput::make('bank')
                         ->label('Bank nomi')
                         ->required()
                         ->maxLength(255),
-                    Forms\Components\TextInput::make('bankInfo.inn')
+                    Forms\Components\TextInput::make('inn')
                         ->label('INN')
                         ->required()
                         ->maxLength(255),
-                    Forms\Components\TextInput::make('bankInfo.mfo')
+                    Forms\Components\TextInput::make('mfo')
                         ->label('MFO')
                         ->required()
                         ->maxLength(255),
-                    Forms\Components\TextInput::make('bankInfo.payment_account')
+                    Forms\Components\TextInput::make('payment_account')
                         ->label('Hisob raqami')
                         ->required()
                         ->maxLength(255),

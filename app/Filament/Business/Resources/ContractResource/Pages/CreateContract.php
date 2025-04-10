@@ -25,9 +25,20 @@ class CreateContract extends CreateRecord
             'Информация о клиенте',
         ];
     }
-
+    // protected function beforeCreate(){
+    //     $cardData=$this->data['contractCards'];
+    //     if (
+    //         filled($cardData['car_number'] ?? null) ||
+    //         filled($cardData['expiry_date'] ?? null) ||
+    //         filled($cardData['phone'] ?? null)
+    //     ) {
+    //         $this->record->contractCards()->create($cardData);
+    //     }
+    // }
     protected function afterCreate(): void
     {
+        // $cardData = $this->data['contractCards'];
+        // dd($cardData);
         // Ma'lumotlarni saqlagandan keyin qadamlar holatini saqlash
         $this->record->update([
             'customer_id'=>auth()->user()->id,
@@ -42,110 +53,111 @@ class CreateContract extends CreateRecord
             'comment' => $this->form->getState()['comment'],
         ]);
     }
+    
     public  function getHeaderActions(): array
     {
         return [
-            Action::make('add_client')
-                    ->label("Klient qo'shish")
-                    ->modalHeading('Yangi mijoz qo‘shish')
-                    ->modalWidth(MaxWidth::TwoExtraLarge)
-                    ->form([
-                        Section::make()
-                            ->schema([
-                                TextInput::make('first_name')
-                                    ->label('Ism')
-                                    ->placeholder('Ism')
-                                    ->required()
-                                    ->maxLength(255)->columnSpan(6),
-                                TextInput::make('last_name')
-                                    ->label('Familiya')
-                                    ->placeholder('Familiya')
-                                    ->required()
-                                    ->maxLength(255)->columnSpan(6),
-                                TextInput::make('patronymic')
-                                    ->label('Otasining ismi')
-                                    ->placeholder('Otasining ismi')
-                                    ->required()
-                                    ->maxLength(255)->columnSpan(6),
-                                Select::make('gender')
-                                    ->options([
-                                        'female'=>'Ayol',
-                                        'male'=>'Erkak',
-                                    ])
-                                    ->label('jinsi')
-                                    ->required()->columnSpan(6),
-                                TextInput::make('birthplace')
-                                    ->label("Tug'ilgan joyi")
-                                    ->placeholder("Tug'ilgan joyi")
-                                    ->required()
-                                    ->maxLength(255)->columnSpan(6),
-                                DatePicker::make('birthday')
-                                    ->label("Tug'ilgan kuni")
-                                    ->placeholder("Tug'ilgan kuni")
-                                    ->required()->columnSpan(6),
-                                TextInput::make('passport_series')
-                                    ->label('Pasport seriyasi')
-                                    ->placeholder('Pasport seriyasi')
-                                    ->maxLength(2) // Maksimal 2 ta belgi
-                                    ->minLength(2) // Minimal 2 ta belgi
-                                    ->extraAttributes([
-                                        'x-on:input' => "event.target.value = event.target.value.toUpperCase()"
-                                    ])
-                                    ->required()->columnSpan(6),
-                                TextInput::make('passport_number')
-                                    ->label('Pasport raqami')
-                                    ->numeric()
-                                    ->placeholder('Pasport raqami')
-                                    ->required()
-                                    ->maxLength(7)->columnSpan(6),
-                                TextInput::make('inn')
-                                    ->label('INN')
-                                    ->numeric()
-                                    ->placeholder('INN')
-                                    ->maxLength(15)->columnSpan(6),
-                                TextInput::make('pinfl')
-                                    ->label('PINFL')
-                                    ->numeric()
-                                    ->placeholder('PINFL')
-                                    ->required()
-                                    ->maxLength(14)->columnSpan(6),
-                                DatePicker::make('passport_date_issue')
-                                    ->label('Pasport berilgan sana')
-                                    ->required()->columnSpan(6),
-                                DatePicker::make('passport_date_expiration')
-                                    ->label('Pasportning amal qilish muddati')
-                                    ->required()->columnSpan(6),
-                            ])->columnSpan(12)->columns(12)
-                    ])
-                    ->action(function ($data, $livewire) {
-                        $client = Client::create([
-                            'customer_id' => auth()->user()->id,
-                            'first_name' => $data['first_name'],
-                            'last_name' => $data['last_name'],
-                            'patronymic' => $data['patronymic'],
-                            'gender' => $data['gender'],
-                            'birthplace' => $data['birthplace'],
-                            'birthday' => $data['birthday'],
-                            'passport_series' => $data['passport_series'],
-                            'passport_number' => $data['passport_number'],
-                            'inn' => $data['inn'],
-                            'pinfl' => $data['pinfl'],
-                            'passport_date_issue' => $data['passport_date_issue'],
-                            'passport_date_expiration' => $data['passport_date_expiration'],
-                        ]);
+            // Action::make('add_client')
+            //         ->label("Klient qo'shish")
+            //         ->modalHeading('Yangi mijoz qo‘shish')
+            //         ->modalWidth(MaxWidth::TwoExtraLarge)
+            //         ->form([
+            //             Section::make()
+            //                 ->schema([
+            //                     TextInput::make('first_name')
+            //                         ->label('Ism')
+            //                         ->placeholder('Ism')
+            //                         ->required()
+            //                         ->maxLength(255)->columnSpan(6),
+            //                     TextInput::make('last_name')
+            //                         ->label('Familiya')
+            //                         ->placeholder('Familiya')
+            //                         ->required()
+            //                         ->maxLength(255)->columnSpan(6),
+            //                     TextInput::make('patronymic')
+            //                         ->label('Otasining ismi')
+            //                         ->placeholder('Otasining ismi')
+            //                         ->required()
+            //                         ->maxLength(255)->columnSpan(6),
+            //                     Select::make('gender')
+            //                         ->options([
+            //                             'female'=>'Ayol',
+            //                             'male'=>'Erkak',
+            //                         ])
+            //                         ->label('jinsi')
+            //                         ->required()->columnSpan(6),
+            //                     TextInput::make('birthplace')
+            //                         ->label("Tug'ilgan joyi")
+            //                         ->placeholder("Tug'ilgan joyi")
+            //                         ->required()
+            //                         ->maxLength(255)->columnSpan(6),
+            //                     DatePicker::make('birthday')
+            //                         ->label("Tug'ilgan kuni")
+            //                         ->placeholder("Tug'ilgan kuni")
+            //                         ->required()->columnSpan(6),
+            //                     TextInput::make('passport_series')
+            //                         ->label('Pasport seriyasi')
+            //                         ->placeholder('Pasport seriyasi')
+            //                         ->maxLength(2) // Maksimal 2 ta belgi
+            //                         ->minLength(2) // Minimal 2 ta belgi
+            //                         ->extraAttributes([
+            //                             'x-on:input' => "event.target.value = event.target.value.toUpperCase()"
+            //                         ])
+            //                         ->required()->columnSpan(6),
+            //                     TextInput::make('passport_number')
+            //                         ->label('Pasport raqami')
+            //                         ->numeric()
+            //                         ->placeholder('Pasport raqami')
+            //                         ->required()
+            //                         ->maxLength(7)->columnSpan(6),
+            //                     TextInput::make('inn')
+            //                         ->label('INN')
+            //                         ->numeric()
+            //                         ->placeholder('INN')
+            //                         ->maxLength(15)->columnSpan(6),
+            //                     TextInput::make('pinfl')
+            //                         ->label('PINFL')
+            //                         ->numeric()
+            //                         ->placeholder('PINFL')
+            //                         ->required()
+            //                         ->maxLength(14)->columnSpan(6),
+            //                     DatePicker::make('passport_date_issue')
+            //                         ->label('Pasport berilgan sana')
+            //                         ->required()->columnSpan(6),
+            //                     DatePicker::make('passport_date_expiration')
+            //                         ->label('Pasportning amal qilish muddati')
+            //                         ->required()->columnSpan(6),
+            //                 ])->columnSpan(12)->columns(12)
+            //         ])
+            //         ->action(function ($data, $livewire) {
+            //             $client = Client::create([
+            //                 'customer_id' => auth()->user()->id,
+            //                 'first_name' => $data['first_name'],
+            //                 'last_name' => $data['last_name'],
+            //                 'patronymic' => $data['patronymic'],
+            //                 'gender' => $data['gender'],
+            //                 'birthplace' => $data['birthplace'],
+            //                 'birthday' => $data['birthday'],
+            //                 'passport_series' => $data['passport_series'],
+            //                 'passport_number' => $data['passport_number'],
+            //                 'inn' => $data['inn'],
+            //                 'pinfl' => $data['pinfl'],
+            //                 'passport_date_issue' => $data['passport_date_issue'],
+            //                 'passport_date_expiration' => $data['passport_date_expiration'],
+            //             ]);
 
-                        Notification::make()
-                            ->title('Mijoz qo‘shildi!')
-                            ->success()
-                            ->body('Yangi mijoz ma\'lumotlari saqlandi.')
-                            ->send();
+            //             Notification::make()
+            //                 ->title('Mijoz qo‘shildi!')
+            //                 ->success()
+            //                 ->body('Yangi mijoz ma\'lumotlari saqlandi.')
+            //                 ->send();
                         
-                        $livewire->form->fill([
-                            'client_id' => $client->id,
-                            'passport_number' => $client->passport_number,
-                            'passport_series' => $client->passport_series,
-                        ]);
-                    }),
+            //             $livewire->form->fill([
+            //                 'client_id' => $client->id,
+            //                 'passport_number' => $client->passport_number,
+            //                 'passport_series' => $client->passport_series,
+            //             ]);
+            //         }),
         ];
     }
     

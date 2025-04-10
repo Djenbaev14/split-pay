@@ -11,14 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('payment_schedules', function (Blueprint $table) {
+        Schema::create('payment_transactions', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('contract_id');
             $table->foreign('contract_id')->references('id')->on('contracts');
-            $table->date('due_date'); // To‘lov muddati
-            $table->decimal('principal_amount',11,2); // Asosiy qarz
-            $table->decimal('interest_amount',11,2); // Procent qarz
-            $table->decimal('total_amount',11,2); // Umumiy to‘lov (asosiy qarz + foiz qarzi)
+            $table->unsignedBigInteger('payment_schedule_id'); 
+            $table->foreign('payment_schedule_id')->references('id')->on('payment_schedules');
+            $table->decimal('paid_principal_amount', 11, 2); // Asosiy qarz 
+            $table->decimal('paid_interest_amount', 11, 2); // Procent qarz 
+            $table->decimal('paid_total_amount', 11, 2); // Umumiy to'lov 
             $table->timestamps();
         });
     }
@@ -28,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('payment_schedules');
+        Schema::dropIfExists('payment_transactions');
     }
 };

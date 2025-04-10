@@ -6,6 +6,7 @@ namespace Database\Seeders;
 use App\Models\Business;
 use App\Models\Card;
 use App\Models\Customer;
+use App\Models\PaymentMethod;
 use App\Models\PeriodType;
 use App\Models\Status;
 use App\Models\TariffType;
@@ -27,6 +28,18 @@ class DatabaseSeeder extends Seeder
             'name' => 'Admin User',
             'login' => 'admin',
             'password' => Hash::make('admin'),
+        ]);
+        PaymentMethod::create([
+            'name'=>'Онлайн',
+            'type'=>'online'
+        ]);
+        PaymentMethod::create([
+            'name'=>'Терминал',
+            'type'=>'teminal'
+        ]);
+        PaymentMethod::create([
+            'name'=>'Наличные',
+            'type'=>'cash'
         ]);
         Business::create([
             'name'=>'DBC'

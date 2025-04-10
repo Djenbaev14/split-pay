@@ -46,17 +46,12 @@ class Contract extends Model
     }
     public function contractCards()
     {
-        return $this->hasOne(ContractCard::class);
+        return $this->hasMany(ContractCard::class)->orderBy('id','desc');
     }
     public function uzcard()
     {
         return $this->hasOne(ContractCard::class)->where('card_name', 'uzcard');
     }
-
-    // public function atmos()
-    // {
-    //     return $this->hasOne(ContractCard::class)->where('card_name', 'atmos');
-    // }
     public function paymentSchedule()
     {
         return $this->hasMany(PaymentSchedule::class);

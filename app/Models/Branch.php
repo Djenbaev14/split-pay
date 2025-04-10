@@ -20,7 +20,7 @@ class Branch extends Model
     }
     public function bankInfo()
     {
-        return $this->hasMany(BranchBankInfo::class);
+        return $this->hasOne(BranchBankInfo::class);
     }
     public function tariff()
     {
