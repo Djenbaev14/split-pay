@@ -77,7 +77,7 @@ class BranchResource extends Resource
                     ->columns(12),
                     // Bank ma'lumotlari
                 Forms\Components\Section::make('Bank ma\'lumotlari')
-                ->relationship('bankInfo')
+                // ->relationship('bankInfo')
                 ->schema([
                     Forms\Components\TextInput::make('bank')
                         ->label('Bank nomi')
