@@ -95,7 +95,7 @@ class BranchResource extends Resource
                         ->label('Hisob raqami')
                         ->required()
                         ->maxLength(255),
-                    Hidden::make('bankInfo.business_id')
+                    Hidden::make('business_id')
                         ->default(fn () => auth()->user()->business_id)
                         ->dehydrated(true),
                 ])
@@ -130,11 +130,11 @@ class BranchResource extends Resource
 
                             // Bank ma'lumotini yaratish
                             $branch->bankInfo()->create([
-                                'business_id' => $data['bankInfo']['business_id'],
-                                'bank' => $data['bankInfo']['bank'],
-                                'inn' => $data['bankInfo']['inn'],
-                                'mfo' => $data['bankInfo']['mfo'],
-                                'payment_account' => $data['bankInfo']['payment_account'],
+                                'business_id' => $data['business_id'],
+                                'bank' => $data['bank'],
+                                'inn' => $data['inn'],
+                                'mfo' => $data['mfo'],
+                                'payment_account' => $data['payment_account'],
                             ]);
 
                             Notification::make()
