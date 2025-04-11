@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class Contract extends Model
 {
@@ -26,7 +27,7 @@ class Contract extends Model
     }
     public function payments()
     {
-        return $this->hasMany(PaymentSchedule::class);
+        return $this->hasMany(Payment::class)->orderBy('id','desc');
     }
     public function status()
     {
@@ -55,6 +56,27 @@ class Contract extends Model
     public function paymentSchedule()
     {
         return $this->hasMany(PaymentSchedule::class);
+    }public function paymentTransactions()
+    {
+        return $this->hasMany(PaymentTransaction::class);
+    }
+    public function checkAndUpdateStatus()
+    {
+        $hasDebt = $this->paymentSchedule->contains(function ($schedule) {
+            $paidPrincipal = $schedule->paymentTransactions->sum('paid_principal_amount');
+            $paidInterest = $schedule->paymentTransactions->sum('paid_interest_amount');
+        
+            // Agar to'lovlardan biri to‘liq yopilmagan bo‘lsa, bu schedule hali yopilmagan
+            return $paidPrincipal < $schedule->principal_amount || $paidInterest < $schedule->interest_amount;
+        });
+        if (! $hasDebt) {
+            Log::info('qarz yoq');
+            $status=Status::where('key','=','completed')->first();
+            $this->status_id = $status->id;
+            $this->save();
+        }
+        
+        Log::info('qarz bor');
     }
     protected static function boot()
     {

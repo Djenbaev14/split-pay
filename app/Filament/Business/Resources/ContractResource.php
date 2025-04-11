@@ -8,8 +8,10 @@ use App\Models\Branch;
 use App\Models\ClientContact;
 use App\Models\ContractCard;
 use App\Models\District;
+use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\PaymentSchedule;
+use App\Models\PaymentTransaction;
 use App\Models\Region;
 use App\Models\Client;
 use App\Models\Contract;
@@ -167,6 +169,7 @@ class ContractResource extends Resource
                                                 ->modalWidth('lg')
                                                 ->modalHeading("Karta qo'shish")
                                                 ->modalSubmitActionLabel('Saqlash')
+                                                ->visible(fn ($record) => ($record->status->key != 'cancelled'))
                                                 ->modalCancelActionLabel('Bekor qilish')
                                                 ->form([
                                                     Tabs::make('Tabs')
@@ -394,7 +397,7 @@ class ContractResource extends Resource
                                 Placeholder::make('comment')
                                     ->label(false)
                                     ->content(fn ($record) => view('contract.payments-table', [
-                                        'payments' => $record->payments,
+                                        'payments' => $record->paymentSchedule,
                                     ]))
                                     ->columnSpan(12),
                                 Actions::make([
@@ -406,6 +409,7 @@ class ContractResource extends Resource
                                         ->modalWidth('lg')
                                         ->modalHeading("To'lovni qabul qilish")
                                         ->modalSubmitActionLabel('Saqlash')
+                                        ->visible(fn ($record) => ($record->status->key != 'cancelled'))
                                         ->modalCancelActionLabel('Bekor qilish')
                                         ->form([
                                             Select::make('payment_method_id')
@@ -432,13 +436,87 @@ class ContractResource extends Resource
                                                 ->label('Miqdori')
                                                 ->required(),
                                         ])
-                                        ->action(function (array $data,$record) {
-                                            ClientContact::create([
-                                                'client_id' => $record->client_id,
-                                                'fio' => $data['fio'],
-                                                'phone' => $data['phone'],
-                                                'relation' => $data['relation'],
+                                        ->action(function (array $data,$record) {$contract = $record;
+                                            $amount = $data['amount'];
+
+                                            $totalRemainingDebt = $contract->paymentSchedule
+                                                ->map(function ($schedule) {
+                                                    $paidPrincipal = $schedule->paymentTransactions->sum('paid_principal_amount');
+                                                    $paidInterest = $schedule->paymentTransactions->sum('paid_interest_amount');
+
+                                                    return max(0, $schedule->principal_amount - $paidPrincipal)
+                                                        + max(0, $schedule->interest_amount - $paidInterest);
+                                                })
+                                                ->sum(); // jami qolgan qarz
+                                        
+                                            if ($data['amount'] > $totalRemainingDebt) {
+                                                    Notification::make()
+                                                        ->title("To‘lov summasi ortiqcha")
+                                                        ->body("Sizdan faqat {$totalRemainingDebt} so‘m qabul qilinishi mumkin")
+                                                        ->danger()
+                                                        ->send();
+                                                
+                                                    return;
+                                            }
+                                            // To‘lovni yozish
+                                            $payment = \App\Models\Payment::create([
+                                                'contract_id' => $contract->id,
+                                                'payment_method_id' => $data['payment_method_id'],
+                                                'contract_card_id' => $data['card_id'] ?? null,
+                                                'total_amount' => $amount,
                                             ]);
+                                        
+                                            // To‘lovni ajratish uchun grafiklarni olib kelamiz
+                                            $schedules = $contract->paymentSchedule()
+                                                ->where(function ($query) {
+                                                    $query->whereRaw('(
+                                                        (interest_amount > (
+                                                            SELECT COALESCE(SUM(pt.paid_interest_amount), 0)
+                                                            FROM payment_transactions pt
+                                                            WHERE pt.payment_schedule_id = payment_schedules.id
+                                                        )) OR 
+                                                        (principal_amount > (
+                                                            SELECT COALESCE(SUM(pt.paid_principal_amount), 0)
+                                                            FROM payment_transactions pt
+                                                            WHERE pt.payment_schedule_id = payment_schedules.id
+                                                        ))
+                                                    )');
+                                                })
+                                                ->orderBy('due_date')
+                                                ->get();
+                                            foreach ($schedules as $schedule) {
+                                                    if ($amount <= 0) break;
+                                            
+                                                    $paidInterest = $schedule->paymentTransactions->sum('paid_interest_amount');
+                                                    $paidPrincipal = $schedule->paymentTransactions->sum('paid_principal_amount');
+                                            
+                                                    $interestLeft = $schedule->interest_amount - $paidInterest;
+                                                    $principalLeft = $schedule->principal_amount - $paidPrincipal;
+                                            
+                                                    $payInterest = min($amount, $interestLeft);
+                                                    $amount -= $payInterest;
+                                            
+                                                    $payPrincipal = min($amount, $principalLeft);
+                                                    $amount -= $payPrincipal;
+                                            
+                                                    if ($payInterest > 0 || $payPrincipal > 0) {
+                                                        PaymentTransaction::create([
+                                                            'contract_id' => $contract->id,
+                                                            'payment_schedule_id' => $schedule->id,
+                                                            'payment_id' => $payment->id,
+                                                            'paid_interest_amount' => $payInterest,
+                                                            'paid_principal_amount' => $payPrincipal,
+                                                            'paid_total_amount' => $payInterest + $payPrincipal,
+                                                        ]);
+                                                    }
+                                            }
+                                            
+                                            $record->checkAndUpdateStatus(); // statusni tekshir
+                                        
+                                            Notification::make()
+                                                ->title(number_format($payment->total_amount,2,'.',' ')." сум to'lov qabul qilindi")
+                                                ->success()
+                                                ->send();
                                         }),
                                 ])->columnSpan(3),
                             
@@ -450,6 +528,12 @@ class ContractResource extends Resource
                         ->tabs([
                             Tab::make("To'lov tarixi")
                                 ->schema([
+                                    Placeholder::make('payments-history')
+                                        ->label(false)
+                                        ->content(fn ($record) => view('contract.payments-history', [
+                                            'contract' => $record,
+                                        ]))
+                                    ->columnSpan(12),
                                 ]),
                             Tab::make('Tranzaksiyalar jurnali')
                                 ->schema([
@@ -459,7 +543,6 @@ class ContractResource extends Resource
                                     Placeholder::make('client-contacts')
                                         ->label(false)
                                         ->content(fn ($record) => view('contract.contracts', [
-                                            'label' => 'Yaratilgan',
                                             'contracts' => $record->client->contracts,
                                         ]))
                                     ->columnSpan(12),

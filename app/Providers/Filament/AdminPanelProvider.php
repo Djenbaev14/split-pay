@@ -41,6 +41,7 @@ class AdminPanelProvider extends PanelProvider
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
             ])
+            ->favicon(asset('images/logo.svg'))
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

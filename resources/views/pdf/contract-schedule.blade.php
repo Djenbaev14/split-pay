@@ -76,7 +76,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($contract->payments as $key=> $payment)
+                    @foreach($contract->paymentSchedule as $key=> $payment)
                         <tr>
                             <td>{{ ++$key }}</td>
                             <td>{{ $payment->due_date }}</td>
@@ -114,7 +114,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($contract->payments as $key=> $payment)
+                    @foreach($contract->paymentSchedule as $key=> $payment)
                         <tr>
                             <td>{{ ++$key }}</td>
                             <td>{{ $payment->due_date }}</td>

@@ -4,6 +4,8 @@ namespace App\Providers\Filament;
 
 use Althinect\FilamentSpatieRolesPermissions\FilamentSpatieRolesPermissionsPlugin;
 use App\Filament\Business\Resources\CustomerResource;
+use App\Models\Business;
+use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -38,6 +40,7 @@ class BusinessPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
             ])
+            ->favicon(asset('images/logo.svg'))
             ->plugin(
                 \Hasnayeen\Themes\ThemesPlugin::make()
             )

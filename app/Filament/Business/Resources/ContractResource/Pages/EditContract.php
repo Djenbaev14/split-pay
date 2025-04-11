@@ -18,7 +18,7 @@ class EditContract extends EditRecord
             // Actions\DeleteAction::make()->label('Shartnomani bekor qilish'),
             Action::make('delete')
                 ->label('Shartnomani bekor qilish')
-                ->action(fn($record) => $record->update(['status_id' => '4'])) // Statusni "cancelled" qilib o‘zgartirish
+                ->action(fn($record) => $record->update(['status_id' => '5'])) // Statusni "cancelled" qilib o‘zgartirish
                 ->color('danger')  // Tugma rangi
                 ->visible(fn ($record) =>  $record->status->key == 'active')
                 ->requiresConfirmation(), // Tasdiqlash oynasi
@@ -33,12 +33,12 @@ class EditContract extends EditRecord
                         $record->update(['status_id' => 3]);
             
                         Notification::make()
-                            ->title('Status muvaffaqiyatli o‘zgartirildi')
+                            ->title('Shartnoma muvaffaqiyatli o‘zgartirildi')
                             ->success()
                             ->send();
                     } else {
                         Notification::make()
-                            ->title('Status allaqachon faollashtirilgan')
+                            ->title('Shartnoma allaqachon faollashtirilgan')
                             ->warning()
                             ->send();
                     }
