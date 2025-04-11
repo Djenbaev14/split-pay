@@ -51,9 +51,9 @@
                 <td colspan="5" class="content">
                 <input type="checkbox" name="collapse" id="handle{{$key}}" />
                 <div class="wrappervideo">
-                    <p class="p-1">Foiz bo'yicha qarzdorlik <span style="color: #d84d4d">{{ number_format($payment->principal_amount - $payment->paymentTransactions->sum('paid_principal_amount'), 2,'.',' ') }}</span></p>
-                    <p class="p-1">To'langan asosiy summa <span style="color: #81c784">{{ number_format($payment->paymentTransactions->sum('paid_interest_amount'), 2,'.',' ') }}</span></p>
-                    <p class="p-1">To'langan foiz miqdori <span style="color: #81c784">{{ number_format($payment->paymentTransactions->sum('paid_principal_amount'), 2,'.',' ') }}</span></p>
+                    <p class="p-1">Foiz bo'yicha qarzdorlik <span style="color: #d84d4d">{{ number_format($payment->interest_amount - $payment->paymentTransactions->sum('paid_interest_amount'), 2,'.',' ') }}</span></p>
+                    <p class="p-1">To'langan asosiy summa <span style="color: #81c784">{{ number_format($payment->paymentTransactions->sum('paid_principal_amount'), 2,'.',' ') }}</span></p>
+                    <p class="p-1">To'langan foiz miqdori <span style="color: #81c784">{{ number_format($payment->paymentTransactions->sum('paid_interest_amount'), 2,'.',' ') }}</span></p>
                 </div>
                 
                 </td>
